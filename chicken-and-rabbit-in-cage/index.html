@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>鸡兔同笼 · 数学小游戏</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23F7EFDF'/%3E%3Crect x='4' y='8' width='24' height='18' rx='4' fill='none' stroke='%237C5E44' stroke-width='2.5'/%3E%3Cpath d='M4 14h24M4 20h24' stroke='%237C5E44' stroke-width='2.5'/%3E%3Ccircle cx='10.5' cy='10' r='3.4' fill='%23F5A623'/%3E%3Ccircle cx='21.5' cy='10' r='4.4' fill='%238B6FD8'/%3E%3C/svg%3E">
+<style>
+  :root{
+    --paper:#F7EFDF;
+    --ink:#43301F;
+    --ink-soft:#8A6B4D;
+    --sun:#F5A623;
+    --sun-deep:#D9822B;
+    --sun-pale:#FDE9C8;
+    --vio:#8B6FD8;
+    --vio-deep:#6C51B8;
+    --wood:#7C5E44;
+    --grass:#E3F2CF;
+    --grass-deep:#BCD99A;
+    --card:#FFFDF7;
+    --ok:#3FA665;
+    --over:#E1543F;
+    --line:#E6D9C3;
+    /* 只用系统常见黑体，不加载任何外部字体 */
+    --font:"Microsoft YaHei","PingFang SC","Heiti SC",SimHei,"Hiragino Sans GB",Arial,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    font-family:var(--font);
+    color:var(--ink);
+    min-height:100vh;
+    line-height:1.5;
+    background-color:var(--paper);
+    background-image:radial-gradient(rgba(124,94,68,.06) 1px, transparent 1px);
+    background-size:22px 22px;
+  }
+  .page{width:100%;max-width:720px;margin:0 auto;padding:16px 14px 40px}
+
+  /* ===== 顶部标题 ===== */
+  .game-head{display:flex;align-items:flex-end;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+  .game-title{font-family:var(--font);font-size:34px;line-height:1.1;letter-spacing:1px;white-space:nowrap}
+  .game-title .t-cage{color:var(--wood)}
+  .game-title .t-chicken{color:var(--sun-deep)}
+  .game-title .t-rabbit{color:var(--vio-deep)}
+  .game-sub{font-size:13px;color:var(--ink-soft);padding-bottom:4px}
+
+  /* ===== 题目卡 ===== */
+  .problem-card{
+    display:flex;
+    align-items:flex-start;
+    gap:10px;
+    background:var(--card);
+    border:2px solid var(--sun);
+    border-radius:18px;
+    padding:16px 18px;
+    box-shadow:0 6px 16px rgba(74,50,40,.08);
+    margin-bottom:16px;
+  }
+  .problem-chip{
+    display:inline-flex;align-items:center;gap:6px;
+    background:var(--sun);color:#fff;
+    font-family:var(--font);
+    font-size:13px;line-height:1.4;padding:4px 12px;border-radius:999px;
+    flex-shrink:0;margin-top:1px;
+  }
+  .problem-body{min-width:0;flex:1}
+  .problem-text{font-size:16px;font-weight:500}
+  .problem-text b{color:#E4572E;font-family:var(--font);font-size:20px;font-weight:700;padding:0 2px}
+  .problem-question{margin-top:8px;font-size:16px}
+  .problem-question b{color:var(--sun-deep)}
+  .problem-question b.rabbit{color:var(--vio-deep)}
+
+  /* ===== 游戏区 ===== */
+  .play-row{display:block}
+  .coop-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+  .coop-card{
+    background:var(--card);
+    border-radius:18px;
+    box-shadow:0 6px 16px rgba(74,50,40,.08);
+    overflow:hidden;
+    display:flex;flex-direction:column;
+  }
+  .coop-card.is-chicken{border:2px solid var(--sun)}
+  .coop-card.is-rabbit{border:2px solid var(--vio)}
+  .coop-head{display:flex;align-items:center;justify-content:space-between;padding:12px 14px 0}
+  .coop-name{font-family:var(--font);font-size:19px;display:flex;align-items:center;gap:7px}
+  .coop-name svg{width:18px;height:18px;flex-shrink:0}
+  .coop-stage{display:grid;place-items:center;padding:8px 0 4px;flex:1}
+  .grab{
+    width:96px;height:96px;border-radius:50%;
+    background:#fff;
+    border:2px dashed var(--line);
+    display:grid;place-items:center;
+    box-shadow:0 4px 12px rgba(74,50,40,.10);
+    cursor:grab;touch-action:none;user-select:none;
+    transition:transform .15s ease, box-shadow .15s ease;
+  }
+  .grab:hover{transform:translateY(-2px) scale(1.04);box-shadow:0 8px 16px rgba(74,50,40,.14)}
+  .grab:active{transform:scale(.9)}
+  .grab img{width:82px;height:82px;object-fit:contain;pointer-events:none;filter:drop-shadow(0 3px 4px rgba(74,50,40,.18))}
+  .grab.empty{filter:grayscale(1) opacity(.35);cursor:not-allowed;border-style:solid;border-color:#DDD2BE}
+  .grab.empty:hover{transform:none}
+  .coop-hint{font-size:11px;color:var(--ink-soft);text-align:center;padding:0 10px 12px}
+
+  /* ===== 笼子 ===== */
+  .cage-card{
+    background:var(--card);
+    border-radius:18px;
+    box-shadow:0 6px 16px rgba(74,50,40,.08);
+    overflow:hidden;
+  }
+  .cage-head{display:flex;align-items:center;justify-content:space-between;padding:12px 16px 0}
+  .cage-title{font-family:var(--font);font-size:19px;display:flex;align-items:center;gap:7px}
+  .cage-title svg{width:18px;height:18px;flex-shrink:0}
+  .cage-desc{font-size:11px;color:var(--ink-soft)}
+  .cage-area{
+    position:relative;
+    --pt:26px;--pr:10px;--pb:12px;--pl:10px;
+    margin:10px 12px 12px;
+    border:3px solid var(--wood);
+    border-radius:14px;
+    min-height:156px;
+    padding:var(--pt) var(--pr) var(--pb) var(--pl);
+    background:linear-gradient(180deg,var(--grass) 0 46%,var(--grass-deep) 100%);
+    overflow:hidden;
+  }
+  .cage-area::before{
+    content:"";position:absolute;left:0;top:0;right:0;height:20px;
+    background:repeating-linear-gradient(90deg,var(--wood) 0 7px,transparent 7px 16px);
+    border-bottom:3px solid var(--wood);
+  }
+  .cage-area::after{
+    content:"";position:absolute;left:8px;right:8px;bottom:8px;height:6px;
+    background:rgba(124,94,68,.15);
+    border-radius:999px;
+  }
+  .cage-animals{
+    /* 绝对定位填满笼内内容区：不参与笼子高度计算，动物再多也不会把笼子撑开 */
+    position:absolute;
+    top:var(--pt);right:var(--pr);bottom:var(--pb);left:var(--pl);
+    display:grid;gap:4px;
+    align-content:start;justify-content:center;
+    z-index:1;
+    --cell:56px;
+  }
+  .cage-animal{
+    width:100%;height:var(--cell);
+    display:grid;place-items:center;
+    background:transparent;border:none;border-radius:12px;
+    cursor:pointer;touch-action:none;user-select:none;
+    transition:transform .12s ease;
+  }
+  .cage-animal:hover{background:rgba(255,253,247,.65)}
+  .cage-animal:active{transform:scale(.82)}
+  .cage-animal img{
+    width:calc(var(--cell) * 0.94);
+    height:calc(var(--cell) * 0.94);
+    object-fit:contain;pointer-events:none;
+    filter:drop-shadow(0 3px 4px rgba(74,50,40,.28));
+  }
+  .cage-animal.pop{animation:pop .32s ease-out}
+  @keyframes pop{0%{transform:scale(.15);opacity:0}70%{transform:scale(1.18);opacity:1}100%{transform:scale(1)}}
+  .cage-empty{
+    position:absolute;inset:0;z-index:2;
+    display:grid;place-items:center;
+    color:var(--ink-soft);font-size:13px;text-align:center;
+    padding:0 24px;pointer-events:none;
+  }
+  .cage-empty .cage-empty-box{border:2px dashed rgba(124,94,68,.4);border-radius:10px;padding:10px 16px}
+  .cage-card.celebrate .cage-area{animation:celebrate 1.6s ease}
+  @keyframes celebrate{
+    0%,100%{box-shadow:0 0 0 0 rgba(63,166,101,0)}
+    25%{box-shadow:0 0 0 12px rgba(63,166,101,.22)}
+    55%{box-shadow:0 0 0 3px rgba(63,166,101,.16)}
+  }
+
+  /* ===== 统计卡 ===== */
+  .stats-card{
+    background:var(--card);
+    border-radius:18px;
+    box-shadow:0 6px 16px rgba(74,50,40,.08);
+    padding:14px 16px;
+    margin-top:14px;
+  }
+  .stats-title{font-family:var(--font);font-size:16px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+  .stat-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+  .stat-row:last-of-type{margin-bottom:12px}
+  .stat-label{width:52px;flex-shrink:0;font-size:13px;font-weight:700}
+  .stat-num{font-family:var(--font);font-size:17px;width:92px;flex-shrink:0;text-align:right}
+  .bar{flex:1;height:12px;background:#EFE6D4;border-radius:999px;overflow:hidden}
+  .bar-fill{display:block;height:100%;width:0;background:var(--sun);border-radius:999px;transition:width .35s ease}
+  .bar-fill.ok{background:var(--ok)}
+  .bar-fill.over{background:var(--over)}
+  .stat-composition{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    font-size:13px;color:var(--ink-soft);
+    border-top:1px dashed var(--line);padding-top:10px;
+  }
+  .stat-composition b{color:var(--ink);font-size:15px}
+  .stat-composition .chick{color:var(--sun-deep)}
+  .stat-composition .rab{color:var(--vio-deep)}
+
+  /* ===== 操作按钮 ===== */
+  .actions{display:flex;gap:10px;margin-top:14px}
+  .btn{
+    flex:1;
+    border:none;border-radius:14px;
+    padding:12px 4px;
+    font-family:var(--font);font-size:16px;
+    cursor:pointer;
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    transition:transform .12s ease, filter .12s ease;
+    touch-action:manipulation;
+  }
+  .btn:active{transform:scale(.95)}
+  .btn svg{width:17px;height:17px;flex-shrink:0}
+  .actions .btn-ghost{flex:0 1 38%}
+  .btn-primary{background:var(--sun);color:#fff;box-shadow:0 4px 0 var(--sun-deep)}
+  .btn-primary:hover{filter:brightness(1.05)}
+  .btn-primary:active{transform:translateY(2px) scale(.97);box-shadow:0 2px 0 var(--sun-deep)}
+  .btn-ghost{background:var(--card);color:var(--ink);border:2px solid var(--line)}
+  .btn-ghost:hover{border-color:var(--ink-soft)}
+  /* 提交后锁定：不可再点，视觉上压暗 */
+  .btn:disabled{cursor:not-allowed;opacity:.55;filter:grayscale(.35);box-shadow:none}
+  .btn:disabled:hover{filter:grayscale(.35);border-color:var(--line)}
+  .btn:disabled:active{transform:none}
+
+  /* ===== 操作记录面板（默认隐藏，提交后双击题目才展开） ===== */
+  .trace-panel{
+    position:fixed;inset:0;z-index:60;
+    display:flex;align-items:center;justify-content:center;
+    padding:20px;background:rgba(58,40,26,.45);
+    animation:traceFade .16s ease;
+  }
+  .trace-panel[hidden]{display:none}
+  @keyframes traceFade{from{opacity:0}to{opacity:1}}
+  .trace-box{
+    width:min(560px,100%);max-height:min(78vh,640px);
+    display:flex;flex-direction:column;
+    background:var(--card);border:2px solid var(--wood);
+    border-radius:18px;overflow:hidden;
+    box-shadow:0 18px 44px rgba(50,32,20,.3);
+  }
+  .trace-head{
+    display:flex;align-items:center;justify-content:space-between;gap:10px;
+    padding:11px 14px;background:var(--sun-pale);
+    border-bottom:2px dashed var(--line);
+    font-family:var(--font);font-size:16px;color:var(--sun-deep);
+  }
+  .trace-head small{font-family:var(--font);font-size:11px;font-weight:400;color:var(--ink-soft);margin-left:6px}
+  .trace-close{
+    width:28px;height:28px;flex-shrink:0;border:none;border-radius:50%;cursor:pointer;
+    background:#fff;color:var(--ink-soft);font-size:19px;line-height:1;
+    display:inline-flex;align-items:center;justify-content:center;
+  }
+  .trace-close:hover{color:var(--ink)}
+  .trace-list{padding:6px 14px 10px;overflow-y:auto;font-size:13px}
+  .trace-row{
+    display:flex;align-items:baseline;gap:10px;padding:6px 2px;
+    border-bottom:1px dashed rgba(124,94,68,.16);
+  }
+  .trace-row:last-child{border-bottom:none}
+  .trace-sec{
+    flex-shrink:0;width:54px;text-align:right;
+    font-family:var(--font);font-size:14px;color:var(--sun-deep);
+  }
+  .trace-act{flex:1;min-width:0;font-weight:600;word-break:break-all}
+  .trace-meta{flex-shrink:0;font-size:11px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+  .trace-row.k-add .trace-act{color:var(--sun-deep)}
+  .trace-row.k-remove .trace-act{color:var(--vio-deep)}
+  .trace-row.k-clear .trace-act{color:var(--over)}
+  .trace-row.k-submit .trace-act{color:var(--ok)}
+  .trace-row.k-start .trace-act,.trace-row.k-view .trace-act{color:var(--ink-soft);font-weight:500}
+  .trace-foot{
+    padding:9px 14px;font-size:11px;color:var(--ink-soft);
+    background:rgba(247,239,223,.7);border-top:1px dashed var(--line);
+  }
+
+  /* 隐藏的图片原型（供 JS 克隆，保证 src 静态可见） */
+  .img-proto{position:absolute;width:1px;height:1px;opacity:0;pointer-events:none;overflow:hidden}
+
+  /* 隐藏的行为记录容器：不占位、不可见，只在后台留痕 */
+  .trace-data{display:none!important}
+
+  /* ===== 平板：只是略微放大，布局仍为单列 ===== */
+  @media (min-width:720px){
+    .page{max-width:680px;padding:22px 20px 44px}
+    .game-title{font-size:38px}
+    .problem-text,.problem-question{font-size:17px}
+    .cage-area{min-height:200px}
+  }
+
+  /* ===== 桌面：左侧操作栏 + 右侧笼子舞台，左右顶部对齐 ===== */
+  @media (min-width:920px){
+    .page{
+      max-width:1140px;
+      padding:30px 32px 56px;
+      display:grid;
+      grid-template-columns:minmax(300px,364px) minmax(0,1fr);
+      grid-template-areas:
+        "head    head"
+        "problem problem"
+        "coops   cage"
+        "stats   cage"
+        "actions actions";
+      column-gap:20px;
+      row-gap:16px;
+      align-items:start;
+    }
+    .game-head{grid-area:head;margin-bottom:0;justify-content:space-between;align-items:flex-end}
+    .game-title{font-size:42px}
+    .game-sub{font-size:13px;padding-bottom:8px}
+
+    .problem-card{
+      grid-area:problem;margin-bottom:0;
+      display:flex;align-items:flex-start;gap:16px;
+      padding:16px 22px;
+    }
+    .problem-chip{margin-bottom:0;margin-top:2px;flex-shrink:0}
+    .problem-body{flex:1;min-width:0}
+    .problem-text,.problem-question{font-size:17px}
+    .problem-question{margin-top:6px}
+
+    .play-row{display:contents}
+    .coop-row{grid-area:coops;margin-bottom:0;gap:16px}
+    .coop-card{min-height:0}
+    .grab{width:104px;height:104px}
+    .grab img{width:88px;height:88px}
+
+    .cage-card{grid-area:cage;align-self:stretch;display:flex;flex-direction:column;min-height:0}
+    .cage-head{padding:16px 20px 0}
+    /* 桌面端高度完全由左侧栏决定，避免笼子撑破网格造成上下不对齐 */
+    .cage-area{flex:1;min-height:0;margin:12px 16px 16px;--pt:30px;--pr:14px;--pb:16px;--pl:14px}
+
+    .stats-card{grid-area:stats;margin-top:0;align-self:stretch;padding:16px 18px}
+    .stat-num{width:96px}
+    .stat-label{width:56px;font-size:14px}
+    .bar{height:14px}
+
+    .actions{grid-area:actions;margin:4px auto 0;max-width:560px;width:100%}
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{animation:none!important;transition:none!important}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <!-- ===== 顶部标题 ===== -->
+  <header class="game-head">
+    <h1 class="game-title"><span class="t-chicken">鸡</span><span class="t-cage">兔</span><span class="t-rabbit">同笼</span></h1>
+    <p class="game-sub">抓一抓 · 数一数 · 算一算</p>
+  </header>
+
+  <!-- ===== 题目 ===== -->
+  <section class="problem-card" aria-label="题目">
+    <span class="problem-chip">题目</span>
+    <div class="problem-body">
+      <p class="problem-text" id="problem-text"></p>
+      <p class="problem-question" id="problem-question"></p>
+    </div>
+  </section>
+
+  <!-- ===== 游戏区 ===== -->
+  <div class="play-row">
+    <div class="coop-row">
+      <!-- 鸡窝 -->
+      <section class="coop-card is-chicken" aria-label="鸡窝">
+        <div class="coop-head">
+          <span class="coop-name">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 3c-3 0-5 2-5 4.5S9 12 12 12s5-2 5-4.5S15 3 12 3z" fill="#F5A623"/><circle cx="9.5" cy="6.4" r="1.3" fill="#fff"/><circle cx="14.5" cy="6.4" r="1.3" fill="#fff"/><path d="M8 6.2C9 3.5 10 3 12 3c.6 0 1.2.2 1.7.5" stroke="#43301F" stroke-width="1.4" stroke-linecap="round"/><path d="M12 6.8l1.4-1.2M11 6.8l1-1" stroke="#43301F" stroke-width="1.4" stroke-linecap="round"/><path d="M12 5v1.6" stroke="#D9822B" stroke-width="1.2"/><path d="M7.5 8.5c-1.6 1.8-2.4 3.4-2.4 5A2.9 2.9 0 0 0 8 16.4c1.2 0 2.2-.7 2.8-1.7M16.5 8.5c1.6 1.8 2.4 3.4 2.4 5a2.9 2.9 0 0 1-2.9 2.9c-1.2 0-2.2-.7-2.8-1.7" stroke="#F5A623" stroke-width="1.6" stroke-linecap="round"/><path d="M12 16.5v4M10 20.5h4" stroke="#D9822B" stroke-width="1.6" stroke-linecap="round"/></svg>
+            鸡窝
+          </span>
+        </div>
+        <div class="coop-stage">
+          <button class="grab" id="chicken-grab" type="button" aria-label="抓一只鸡放进笼子">
+            <img id="chicken-grab-img" alt="鸡">
+          </button>
+        </div>
+        <p class="coop-hint">点一下，或按住拖进笼子</p>
+      </section>
+
+      <!-- 兔窝 -->
+      <section class="coop-card is-rabbit" aria-label="兔窝">
+        <div class="coop-head">
+          <span class="coop-name">
+            <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8.5 9c0-2.4 1.6-4.4 3.5-4.4S15.5 6.6 15.5 9c0 1.8-1 3.3-2.5 3.9 1.6.5 2.5 2.1 2.5 3.9 0 2.2-1.8 4-4 4s-4-1.8-4-4c0-1.8.9-3.4 2.5-3.9-1.5-.6-2.5-2.1-2.5-3.9z" fill="#EFE6F6"/><path d="M8.5 9c0-2.4 1.6-4.4 3.5-4.4S15.5 6.6 15.5 9c0 1.8-1 3.3-2.5 3.9 1.6.5 2.5 2.1 2.5 3.9 0 2.2-1.8 4-4 4s-4-1.8-4-4c0-1.8.9-3.4 2.5-3.9-1.5-.6-2.5-2.1-2.5-3.9z" stroke="#8B6FD8" stroke-width="1.5"/><path d="M9 9.5C8 8.4 8.4 6.8 9.8 6c1.6-.9 3.4-.3 4 1.2M15 9.5c1.4-1.3 1-3 .4-3.9-1-1.4-2.8-1.7-4-.6" stroke="#8B6FD8" stroke-width="1.5" stroke-linecap="round"/><circle cx="10.8" cy="10.4" r=".5" fill="#43301F"/><circle cx="13.8" cy="10.4" r=".5" fill="#43301F"/><path d="M11.4 12.2c.4.3 1 .3 1.4 0" stroke="#43301F" stroke-width="1.2" stroke-linecap="round"/><circle cx="12" cy="13.4" r=".8" fill="#EF9FB8"/></svg>
+            兔窝
+          </span>
+        </div>
+        <div class="coop-stage">
+          <button class="grab" id="rabbit-grab" type="button" aria-label="抓一只兔子放进笼子">
+            <img id="rabbit-grab-img" alt="兔">
+          </button>
+        </div>
+        <p class="coop-hint">点一下，或按住拖进笼子</p>
+      </section>
+    </div>
+
+    <!-- 笼子 -->
+    <section class="cage-card" id="cage-card" aria-label="笼子">
+      <div class="cage-head">
+        <span class="cage-title">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="6" width="18" height="14" rx="3" stroke="#7C5E44" stroke-width="2"/><path d="M3 11h18M3 16h18M7 6V4M12 6V4M17 6V4" stroke="#7C5E44" stroke-width="2" stroke-linecap="round"/></svg>
+          笼子
+        </span>
+        <span class="cage-desc">点笼子里的小动物可放回</span>
+      </div>
+      <div class="cage-area" id="cage-area">
+        <div class="cage-animals" id="cage-animals"></div>
+        <div class="cage-empty" id="cage-empty">
+          <div class="cage-empty-box">笼子还空着，<br>把鸡和兔子抓进来吧</div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- ===== 实时统计 ===== -->
+  <section class="stats-card" aria-label="实时统计">
+    <div class="stats-title">实时统计</div>
+    <div class="stat-row">
+      <span class="stat-label">动物</span>
+      <span class="stat-num" id="stat-animals">0 / 10</span>
+      <span class="bar" aria-hidden="true"><span class="bar-fill" id="stat-animals-bar"></span></span>
+    </div>
+    <div class="stat-row">
+      <span class="stat-label">腿</span>
+      <span class="stat-num" id="stat-feet">0 / 26</span>
+      <span class="bar" aria-hidden="true"><span class="bar-fill" id="stat-feet-bar"></span></span>
+    </div>
+    <div class="stat-composition">
+      <span id="stat-composition"></span>
+    </div>
+  </section>
+
+  <!-- ===== 操作按钮 ===== -->
+  <div class="actions">
+    <button class="btn btn-ghost" id="btn-clear" type="button">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16M9 7V5h6v2M6.5 7l.8 12h9.4l.8-12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 11v5M14 11v5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+      清空笼子
+    </button>
+    <button class="btn btn-primary" id="btn-submit" type="button">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M8.5 12.2l2.4 2.4 4.6-4.8" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      确认提交
+    </button>
+  </div>
+</div>
+
+<!-- ===== 隐藏操作记录面板：确认提交后双击题目卡才展开 ===== -->
+<div class="trace-panel" id="trace-panel" hidden>
+  <div class="trace-box" role="dialog" aria-modal="true" aria-label="操作记录">
+    <div class="trace-head">
+      <span>操作记录<small id="trace-sub"></small></span>
+      <button class="trace-close" id="trace-close" type="button" aria-label="关闭">&times;</button>
+    </div>
+    <div class="trace-list" id="trace-list"></div>
+    <div class="trace-foot" id="trace-foot"></div>
+  </div>
+</div>
+
+<!-- 隐藏的图片原型，供 JS 克隆使用（src 由脚本以内联图片注入，不依赖外网） -->
+<img class="img-proto" id="img-chicken" alt="" aria-hidden="true">
+<img class="img-proto" id="img-rabbit" alt="" aria-hidden="true">
+
+<!-- 隐藏行为记录：页面上完全不可见，只把操作明细写进这里（也可在控制台看 __TRACE__） -->
+<div id="trace-data" class="trace-data" hidden aria-hidden="true"></div>
+
+<script>
+(function(){
+  'use strict';
+  const $ = s => document.querySelector(s);
+  const REDUCED = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const chickenProto = document.getElementById('img-chicken');
+  const rabbitProto = document.getElementById('img-rabbit');
+  const SUPPLY = 20;
+
+  /* ---- 内嵌 base64 PNG 小动物（图片已内嵌，断网也能显示，不依赖任何外网） ---- */
+  const URL_CHICKEN = 'data:image/png;base64,' +
+    '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' +
+    'nHOBXgJcDdeB24APAPcAsXkPAy4DfBE4GxoEPAv8I/IjsReHngZcCpwP/A3wc+ApwEngO8DrgHKAJfB74CPBjoA2c' +
+    'D7wFeD7gA18CPgT8GJgDzgReD7wU6AP+HfgQ2YsRzwReC1wM9AJfBz4M3APUcv/Am4CXAAXgPuA9wO3AGFACXg38N' +
+    'tAPfA/4G+BpQBjzwNuCXgF7gLcD7gVuATuAscAXwJuB5wK3A+4HbgFKgC3g7cCHQB3wTeBtwKtABysBvA28GysAPg' +
+    'HcAXwEywPOAdwKvBHqA24D3ALcCTaAf+B3gVUAv8APgncCXgQJwPvBO4JVAH/Aj4B3ALWQvjjwTeDPwEqAGfA94N/' +
+    'B5oAmcCrwGeA3QC9wJfBD4ClABzgNeD7wE6AX+G/gE8FWgCJwBvBZ4OdADfB/4J+BLQA5wPvAl4GVAE7gQ+CHwHqA' +
+    'XeCnwEqAXuB34CPB9oAucArwdeDvQA3wc+CHwXqAGnAq8BXgP0AjcD7wfuAKrAqcBrgJcDdeA24L3AF4EycC7wJuB' +
+    'lQBm4HXgPcAtQA1wPvBG4GVAA7gVeD9wG1AGng28HXghUAK+BrwPuB1oAKcDrwdeDvQAPwA+ANwO1IA+4A3Aq4Ee4' +
+    'O/Ae4FbgTpwKvAa4DVABfgK8D7g+4ACPAt4A/ASoA/4JvB+4HagCZwGvB54KdADfB34IHAL0ATOB34LeD7QBK4D3g' +
+    'l8GagD5wJvA14C9ADfAN4NfAYw4GXArwKvBOrAN4H3Ab8P1IGTgVcDLwd6gJuB9wLfBErAmcDrgJcBJeBrwPuA24' +
+    'E68EzgdcDLgRJwO/Ae4BagApwDvAl4GdAD3AK8F/gO0ABOAj4e+AXgNqAJnA28AXgp0ArcALwXuBOoA6cCrwFeA/Q' +
+    'C3wTeBtwKlAAzgLeBrwc6AFuBN4NfBOrAScBrgJcDJeA24L3Al4EycA7wJuBlQBm4HXgPcAtQA1wPvBG4GVAA7gVe' +
+    'D9wG1AGng28HXghUAK+BrwPuB1oAKcDrwdeDvQAPwA+ANwO1IA+4A3Aq4Ee4O/Ae4FbgTpwKvAa4DVABfgK8D7g+4' +
+    'ACPAt4A/ASoA/4JvB+4HagCZwGvB14KdADfB34IHAL0ATOB34LeD7QBK4D3gl8GagD5wJvA14C9ADfAN4NfAYw4GX' +
+    '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';
